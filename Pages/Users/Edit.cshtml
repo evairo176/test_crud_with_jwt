@@ -1,0 +1,148 @@
+@page "{id:int}"
+@model test_crud_with_jwt.Pages.Users.EditModel
+@{
+    ViewData["Title"] = "Edit User";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4>Edit User: @Model.User.Name</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <input type="hidden" asp-for="User.Id" />
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="User.Name" class="form-label"></label>
+                                <input asp-for="User.Name" class="form-control" />
+                                <span asp-validation-for="User.Name" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="User.Email" class="form-label"></label>
+                                <input asp-for="User.Email" class="form-control" />
+                                <span asp-validation-for="User.Email" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Password" class="form-label">Password Baru (Kosongkan jika tidak ingin mengubah)</label>
+                                <input asp-for="Password" type="password" class="form-control" />
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="User.Age" class="form-label"></label>
+                                <input asp-for="User.Age" class="form-control" type="number" min="1" max="120" />
+                                <span asp-validation-for="User.Age" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label asp-for="User.Address" class="form-label"></label>
+                        <input asp-for="User.Address" class="form-control" />
+                        <span asp-validation-for="User.Address" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="form-label">Hobi</label>
+                        <div id="hobbies-container">
+                            @if (Model.HobbyNames.Any())
+                            {
+                                @for (int i = 0; i < Model.HobbyNames.Count; i++)
+                                {
+                                    <div class="input-group mb-2">
+                                        <input type="text" name="HobbyNames[@i]" value="@Model.HobbyNames[i]" class="form-control" placeholder="Masukkan nama hobi" />
+                                        <button type="button" class="btn btn-outline-danger" onclick="removeHobby(this)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="input-group mb-2">
+                                    <input type="text" name="HobbyNames" class="form-control" placeholder="Masukkan nama hobi" />
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeHobby(this)" style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addHobby()">
+                            <i class="fas fa-plus"></i> Tambah Hobi
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Update
+                        </button>
+                        <a asp-page="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let hobbyIndex = @Model.HobbyNames.Count;
+
+        function addHobby() {
+            const container = document.getElementById('hobbies-container');
+            const div = document.createElement('div');
+            div.className = 'input-group mb-2';
+            div.innerHTML = `
+                <input type="text" name="HobbyNames[${hobbyIndex}]" class="form-control" placeholder="Masukkan nama hobi" />
+                <button type="button" class="btn btn-outline-danger" onclick="removeHobby(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(div);
+            hobbyIndex++;
+            updateRemoveButtons();
+        }
+
+        function removeHobby(button) {
+            button.parentElement.remove();
+            updateRemoveButtons();
+            reindexHobbies();
+        }
+
+        function updateRemoveButtons() {
+            const container = document.getElementById('hobbies-container');
+            const buttons = container.querySelectorAll('.btn-outline-danger');
+            buttons.forEach((button, index) => {
+                button.style.display = buttons.length > 1 ? 'block' : 'none';
+            });
+        }
+
+        function reindexHobbies() {
+            const container = document.getElementById('hobbies-container');
+            const inputs = container.querySelectorAll('input[type="text"]');
+            inputs.forEach((input, index) => {
+                input.name = `HobbyNames[${index}]`;
+            });
+            hobbyIndex = inputs.length;
+        }
+
+        // Initialize
+        updateRemoveButtons();
+    </script>
+}

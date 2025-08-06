@@ -1,0 +1,237 @@
+@page
+@model test_crud_with_jwt.Pages.HobbiesModel
+@{
+    ViewData["Title"] = "Hobi Saya";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Hobi Saya</h2>
+    <div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addHobbyModal">
+            <i class="fas fa-plus"></i> Tambah Hobi
+        </button>
+        <a asp-page="Profile" class="btn btn-secondary">
+            <i class="fas fa-user"></i> Kembali ke Profil
+        </a>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="get">
+            <div class="input-group">
+                <input type="text" name="searchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Cari hobi...">
+                <button class="btn btn-outline-secondary" type="submit">
+                    <i class="fas fa-search"></i> Cari
+                </button>
+                @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                {
+                    <a href="@Url.Page("Hobbies")" class="btn btn-outline-danger">
+                        <i class="fas fa-times"></i> Reset
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        @if (Model.Hobbies.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nama Hobi</th>
+                            <th>Deskripsi</th>
+                            <th>Diperbarui</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var hobby in Model.Hobbies)
+                        {
+                            <tr>
+                                <td>@hobby.Name</td>
+                                <td>@(hobby.Description ?? "-")</td>
+                                <td>@hobby.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editHobbyModal" 
+                                                onclick="setEditHobby(@hobby.Id, '@hobby.Name', '@(hobby.Description ?? "")')">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" 
+                                                onclick="setDeleteHobby(@hobby.Id, '@hobby.Name')">
+                                            <i class="fas fa-trash"></i> Hapus
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Model.GetPageUrl(Model.CurrentPage - 1)">Previous</a>
+                        </li>
+                        
+                        @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="@Model.GetPageUrl(i)">@i</a>
+                            </li>
+                        }
+                        
+                        <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Model.GetPageUrl(Model.CurrentPage + 1)">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+
+            <div class="mt-3">
+                <small class="text-muted">
+                    Menampilkan @((Model.CurrentPage - 1) * 10 + 1) - @(Math.Min(Model.CurrentPage * 10, Model.TotalCount)) dari @Model.TotalCount hobi
+                </small>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-heart fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Belum ada hobi</h5>
+                @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                {
+                    <p class="text-muted">Tidak ada hobi yang sesuai dengan pencarian "<strong>@Model.SearchTerm</strong>"</p>
+                    <a href="@Url.Page("Hobbies")" class="btn btn-outline-primary">Tampilkan Semua Hobi</a>
+                }
+                else
+                {
+                    <p class="text-muted">Mulai dengan menambahkan hobi pertama Anda</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addHobbyModal">
+                        <i class="fas fa-plus"></i> Tambah Hobi
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Add Hobby Modal -->
+<div class="modal fade" id="addHobbyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="AddHobby">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tambah Hobi Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label for="addHobbyName" class="form-label">Nama Hobi</label>
+                        <input type="text" name="hobbyName" id="addHobbyName" class="form-control" required />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="addHobbyDescription" class="form-label">Deskripsi (Opsional)</label>
+                        <textarea name="description" id="addHobbyDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Tambah</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Hobby Modal -->
+<div class="modal fade" id="editHobbyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="EditHobby">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Hobi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="hobbyId" id="editHobbyId" />
+                    <div class="form-group mb-3">
+                        <label for="editHobbyName" class="form-label">Nama Hobi</label>
+                        <input type="text" name="hobbyName" id="editHobbyName" class="form-control" required />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="editHobbyDescription" class="form-label">Deskripsi (Opsional)</label>
+                        <textarea name="description" id="editHobbyDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Konfirmasi Hapus</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Apakah Anda yakin ingin menghapus hobi <strong id="deleteHobbyName"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <form method="post" asp-page-handler="DeleteHobby" style="display: inline;">
+                    <input type="hidden" name="hobbyId" id="deleteHobbyId" />
+                    <button type="submit" class="btn btn-danger">Hapus</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function setEditHobby(id, name, description) {
+            document.getElementById('editHobbyId').value = id;
+            document.getElementById('editHobbyName').value = name;
+            document.getElementById('editHobbyDescription').value = description;
+        }
+
+        function setDeleteHobby(id, name) {
+            document.getElementById('deleteHobbyId').value = id;
+            document.getElementById('deleteHobbyName').textContent = name;
+        }
+    </script>
+}
